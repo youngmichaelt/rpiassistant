@@ -6,8 +6,15 @@ import pickle
 import time
 import cv2
 import RPi.GPIO as GPIO
+import speech_recognition as sr
+import threading
+import os
+import subprocess
+import tkinter as tk
 
 
+
+#setup pins for tracking
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(3, GPIO.OUT)
 p = GPIO.PWM(3, 50)
@@ -16,7 +23,40 @@ p.start(0)
 
 
 
+def speechRecognition():
+    r = sr.Recognizer()
+    mic = sr.Microphone(device_index=2)
+    speech = None
 
+    while True:
+        
+        with mic as source:
+            r.adjust_for_ambient_noise(source)
+            audio = r.listen(source)
+
+        try:
+            speech = r.recognize_google(audio)
+            print(speech)
+            print('')
+
+        except sr.UnknownValueError:
+            print('could not understand')
+            
+            time.sleep(1)
+            
+        if speech is not None:
+
+            if 'quit' in speech:
+                s = subprocess.Popen(['python', 'main.py'])
+                os._exit(13)
+                
+                break
+            
+##                window.destroy()
+                
+t = threading.Thread(target=speechRecognition)
+
+t.start()
 
 #initialize variables
 cascade = 'haarcascade_frontalface_default.xml'
@@ -32,6 +72,7 @@ print('starting video stream')
 #start FPS counter
 fps = FPS().start()
 
+#create tracker
 tracker = cv2.TrackerKCF_create()
 initBB = None
 
@@ -47,51 +88,48 @@ while True:
 
     #resize frame to speed up processing
     frame = vs.read()
-    frame = imutils.resize(frame, width=400)
-
-        
-
+    frame = imutils.resize(frame, width=400)    
     
     #if not tracking yet
     
-##    if initBB is None or initBB == '':
     if tracking == False:
-        print('attempting to detect face')
+        print('Attempting to Detect Face')
         #convert input to gray for detection and rbg for recognition
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
         #detect faces in grayscale frame
         rects = detector.detectMultiScale(gray, scaleFactor=1.1, 
-                    minNeighbors=10, minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
+                    minNeighbors=3, minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
         print(rects)
         
-        #start tracker
+        #if face detected, start tracker
         if len(rects) > 0:
         
             initBB = tuple(rects[0])
-            print('starting tracker')
+            print('Face Detected, Starting Tracker')
             tracker.clear()
             tracker = cv2.TrackerMOSSE_create()
-
             tracker.init(frame, initBB)
             tracking = True
             
     #if we are tracking       
-##    if initBB is not None:
     if tracking == True:
         (success, box) = tracker.update(frame)
-        
+
+        #if we can't track for over 10 frames, restart tracker
         if len(success_list) > 10:
             success_list = []
             tracking = False
-            
+
+        #if we are tracking    
         if success:
 
             success_list = []
             
-            
             (x, y, w, h) = [int(v) for v in box]
+
+            #increase tracking box size
             x2 = x-50
             y2 = y-50
             w2 = w*2
@@ -101,9 +139,8 @@ while True:
             print(x2, y2, w2, h2)
             
             
-            
+            #every n frames check where box is, turn robot based on that
             if num_frames % 2 == 0:
-                
                     
                 if x in range(0, 125):
                     print('move left')
