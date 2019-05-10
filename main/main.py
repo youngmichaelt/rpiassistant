@@ -7,11 +7,13 @@ import pyttsx3
 import time
 import tkinter as tk
 from tkinter import ttk
-from tkinter import font
+from tkinter import font, Canvas, Scrollbar, Frame
 import threading
 import os
+from requests import get
+from bs4 import BeautifulSoup
 
-
+time.sleep(5)
 #initialize microphone
 r = sr.Recognizer()
 mic = sr.Microphone(device_index=2)
@@ -28,7 +30,7 @@ notes_on = False
 
 conversation = 0
 
-commands_list = ['start tracker', 'start notes']
+commands_list = ['start tracker', 'start notes', 'start weather']
 
 
 
@@ -132,12 +134,57 @@ def main_loop():
                 p = subprocess.Popen(['python', 'notes.py'])
                 window.destroy()
                 break
+
+            if 'start weather' in speech:
+                print('Opening Weather')
+                engine.say('Okay, starting weather')
+                engine.runAndWait()
+                time.sleep(0.5)
+                p = subprocess.Popen(['python', 'weather.py'])
+                window.destroy()
+                break
+
+            if 'weather' in speech:
+                
+
+                url = 'https://weather.com/weather/today/l/ccb3317341d964ec4853607d78762743e9624022dfb117069ff2e7d45fb2a8e9'
+
+                response = get(url)
+
+
+                html_soup = BeautifulSoup(response.text, 'html.parser')
+
+                tempElement = html_soup.find_all('div', class_ = 'today_nowcard-temp')
+                temp = tempElement[0].span.text
+
+                weatherElement = html_soup.find_all('div', class_ = 'today_nowcard-phrase')
+                weather = weatherElement[0].text
+
+                feelslikeElement = html_soup.find_all('div', class_ = 'today_nowcard-feels')
+                feelslike = feelslikeElement[0].text
+
+
+
+                print(temp, weather, feelslike)
+                
+                
+                engine.say('The current temperature is' + temp)
+                engine.say('It currently'+feelslike+'outside')
+
+                engine.say('the weather is ' + weather)
+                time.sleep(1)
+                engine.runAndWait()
+                
+
+            
                 
             if 'quit' in speech:
                 print('Quitting')
                 engine.say('Quitting, goodbye')
                 engine.runAndWait()
                 time.sleep(0.5)
+                break
+                p = subprocess.Popen(['python', 'listen.py'])
                 window.destroy()
                 break
             
@@ -146,8 +193,7 @@ def main_loop():
             if key == ord('q'):
                 break
 
-            if kill == True:
-                break
+            
             
 
 
@@ -174,31 +220,43 @@ def startTracker():
     p = subprocess.Popen(['python', 'trackwmotion.py'])
     window.destroy()
     print('trying to kill thread')
-    os._exit(13)    
+    os._exit(13)
+
+def startWeather():
+    p = subprocess.Popen(['python', 'weather.py'])
+    window.destroy()
+    os._exit(13)
+
+def startManualMovement():
+    p = subprocess.Popen(['python', 'manualmovement.py'])
+    window.destroy()
+    os._exit(13)
 
     
 def quitFunction():
     print('quitting')
+    
     window.destroy()
+    p = subprocess.Popen(['python', 'listen.py'])
     os._exit(13)
 
 
 
 window = tk.Tk()  
 window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
-##window.geometry('1280x720')
-buttonHeight = 10
-buttonWidth = 35
+##window.geometry('480x320')
+buttonHeight = 5
+buttonWidth = 15
 
 
-font = font.Font(family='Helvetica', size=20, weight='bold')
-
-
+font = font.Font(family='Helvetica', size=10, weight='bold')
 
 n = ttk.Notebook(window)
 
-f1 = ttk.Frame(n, width = window.winfo_screenwidth(), height = window.winfo_screenheight())
-f2 = ttk.Frame(n, width = window.winfo_screenwidth(), height = window.winfo_screenheight())
+
+
+f1 = ttk.Frame(n, width = 480, height = 320)
+f2 = ttk.Frame(n, width = 480, height = 320)
 n.add(f1, text='Dashboard')
 n.add(f2, text='Voice Log')
 n.grid()
@@ -206,17 +264,27 @@ n.grid()
 f1.grid_propagate(False)
 f2.grid_propagate(False)
 
-voiceOutputBox = tk.Listbox(f2, height=20, width=33, font=font)
-voiceOutputBox.place(x=500, y=50)
 
-notesButton = tk.Button(f1, text ="Start Notes", font=font,command = startNotes, height = buttonHeight, width =buttonWidth )
-notesButton.place(x=250, y=0)
 
-trackerButton = tk.Button(f1, text ="Start Tracker", command = startTracker, height = buttonHeight, width =buttonWidth )
-trackerButton.place(x=750, y=0)
+voiceOutputBox = tk.Listbox(f2, height=10, width=40, font=font)
+voiceOutputBox.place(x=35, y=20)
 
-quitButton= tk.Button(window, text ="quit", command = quitFunction, height = buttonHeight, width =buttonWidth )
-quitButton.place(x=500,y=450)
+notesButton = tk.Button(f1, text ="Notes",command = startNotes, height = buttonHeight, width =buttonWidth )
+notesButton.place(x=0, y=0)
+
+trackerButton = tk.Button(f1, text ="Tracker", command = startTracker, height = buttonHeight, width =buttonWidth )
+trackerButton.place(x=160, y=0)
+
+manualButton = tk.Button(f1, text ="Manual Movement", command = startManualMovement, height = buttonHeight, width =buttonWidth )
+manualButton.place(x=320, y=0)
+
+weatherButton = tk.Button(f1, text = "Weather", command = startWeather, height=buttonHeight, width = buttonWidth)
+weatherButton.place(x = 0, y = 100)
+
+
+
+quitButton= tk.Button(window, text ="quit", command = quitFunction, height = 3, width =8)
+quitButton.place(x=375,y=200)
   
 
 window.mainloop()  

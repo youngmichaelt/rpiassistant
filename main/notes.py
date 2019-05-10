@@ -15,6 +15,9 @@ global window
 global voiceOutput
 global popup
 global notesOutput
+global commandOutput
+
+time.sleep(5)
 
 def notes():
     r = sr.Recognizer()
@@ -23,6 +26,9 @@ def notes():
     engine.setProperty('voice','com.apple.speech.synthesis.voice.daniel')
     i = 0
     speech = None
+
+    commands = ['create new category', 'list notes', 'read all notes', 'read notes', 'add note', 'delete note']
+    
 
 
 
@@ -43,7 +49,7 @@ def notes():
         if conversation == 0:
             print('What would you like to do?')
             print('')
-            
+            commandOutput.insert(0, 'What would you like to do?')
             engine.say('What would you like to do?')
             engine.runAndWait()
             time.sleep(1)
@@ -64,7 +70,7 @@ def notes():
             print('could not understand anything')
             engine.say('I could not understand you')
             engine.runAndWait()
-            voiceOutput.insert(0, 'could not understand')
+            commandOutput.insert(0, 'could not understand')
             time.sleep(1)
             
 
@@ -88,13 +94,19 @@ def notes():
                 
         if speech is not None:
 
-            
+            #list commands
+            if 'list commands' in speech:
+                engine.say('Listing commands')
+                for command in commands:
+                    engine.say(command)
+                    engine.runAndWait()
             
             #create new category(new file)
             if 'create new category' in speech:
                 f = open('notes/test.txt', 'w')
                 engine.say('Creating a new category')
                 engine.runAndWait()
+                commandOutput.insert(0, 'Creating a new category')
                 time.sleep(1)
                 conversation = 0
 
@@ -108,6 +120,7 @@ def notes():
                     with open('notes/'+path, 'r') as notes:
                         for line in notes.readlines():
                             print(line, end='')
+                            commandOutput.insert(0, line)
                             engine.say(line)
                             engine.runAndWait()
                             time.sleep(0.5) 
@@ -116,19 +129,21 @@ def notes():
             #list notes
             if 'list notes' in speech:
                 print('listing notes')
+                commandOutput.insert(0, 'Listing notes')
                 notes = os.listdir('./notes')
                 for note in notes:
                     #read note
                     print(note)
+                    commandOutput.insert(0, note)
                     engine.say(note)
                     engine.runAndWait()
                     time.sleep(0.5)
-                    output.insert(0, note)
                 conversation = 0
                 
             #read specific notes           
             if 'read' in speech and 'all' not in speech:
                 print('opening')
+                commandOutput.insert(0, 'Opening notes')
                 engine.say('Opening notes')
                 engine.runAndWait()
                 time.sleep(0.5) 
@@ -141,6 +156,7 @@ def notes():
                         with open('notes/'+path, 'r') as notes:
                             for line in notes.readlines():
                                 print(line, end='')
+                                commandOutput.insert(0, line)
                                 engine.say(line)
                                 engine.runAndWait()
                                 time.sleep(0.5) 
@@ -152,6 +168,7 @@ def notes():
                 if conversation == 0:
                     #go ahead, start dictating note
                     print('Start Dictating Note')
+                    commandOutput.insert(0, 'Start Dictating Note')
                     engine.say('Start dictating note')
                     engine.runAndWait()
                     time.sleep(0.5) 
@@ -178,6 +195,7 @@ def notes():
                 if conversation == 2:
                     #are you done with your note
                     print('are you done with your note?')
+                    commandOutput.insert(0, 'are you done with your note?')
                     engine.say('Are you finished with this note?')
                     engine.runAndWait()
                     time.sleep(0.5) 
@@ -188,6 +206,7 @@ def notes():
                     if conversation == 3:
                         #continue to add your note
                         print('continue your note')
+                        commandOutput.insert(0, 'continue your note')
                         engine.say('Please continue to dictate your note')
                         engine.runAndWait()
                         time.sleep(0.5)
@@ -199,6 +218,7 @@ def notes():
                             
                             n.close()
                             print('Added note: '+note_text)
+                            commandOutput.insert(0, 'added note: '+note_text)
                             engine.say('Added note '+note_text)
                             engine.runAndWait()
                             time.sleep(0.5)
@@ -209,6 +229,7 @@ def notes():
                             
                 if 'yes' in speech:
                     print('saving note')
+                    commandOutput.insert(0,'saving note')
                     engine.say('Okay, saving note')
                     engine.runAndWait()
                     time.sleep(0.5) 
@@ -218,7 +239,7 @@ def notes():
                     adding_note = False
                     
             #delete notes
-            if 'delete notes' in speech or deleting == True:
+            if 'delete' in speech or deleting == True:
                 deleting = True
                 if conversation == 0:
                     print('starting deleting process')
@@ -259,8 +280,9 @@ def notes():
                 
                 
                     
-            if 'stop notes' in speech:
-                p = subprocess.Popen(['python', 'main.py'])
+            if 'quit' in speech:
+##                p = subprocess.Popen(['python', 'main.py'])
+                quitFunction()
                 break
 
 
@@ -274,7 +296,7 @@ def notes():
 def quitFunction():
     print('quitting notes, starting main dashboard')
     window.destroy()
-##    p = subprocess.Popen(['python', 'main.py'])
+    p = subprocess.Popen(['python', 'main.py'])
     os._exit(13)
     
 def addNotePopup():
@@ -282,12 +304,14 @@ def addNotePopup():
     global noteEntry
     
     popup = tk.Tk()
-    popup.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
+##    popup.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
+    popup.geometry('480x320')
     popup.wm_title('add note')
-    noteEntry = Entry(popup, width=15)
-    noteEntry.place(x=0)
-    addButton = tk.Button(popup, command= addNote, width=15)
-    addButton.place(x=25, y=25)
+    noteEntry = Entry(popup, width=18)
+    noteEntry.place(x=175, y=100)
+    addButton = tk.Button(popup, text = 'add',command= addNote, width=15)
+    addButton.place(x=175, y=150)
+    
 
 def addNote() :
     print('added')
@@ -345,18 +369,19 @@ t = threading.Thread(target=notes)
 t.start()
 
 window = tk.Tk()  
-window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
+##window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
+window.geometry('480x320')
+buttonHeight = 4
+buttonWidth = 15
 
-buttonHeight = 10
-buttonWidth = 35
-
-font = font.Font(family='Helvetica', size=12, weight='bold')
+font = font.Font(family='Helvetica', size=10, weight='bold')
 
 n = ttk.Notebook(window)
 
-f1 = ttk.Frame(n, width = window.winfo_screenwidth(), height = window.winfo_screenheight())
-f2 = ttk.Frame(n, width = window.winfo_screenwidth(), height = window.winfo_screenheight())
-f3 = ttk.Frame(n, width = window.winfo_screenwidth(), height = window.winfo_screenheight())
+f1 = ttk.Frame(n, width = 480, height = 320)
+f2 = ttk.Frame(n, width = 480, height = 320)
+f3 = ttk.Frame(n, width = 480, height = 320)
+
 
 n.add(f1, text='Dashboard')
 n.add(f2, text='Notes')
@@ -367,28 +392,32 @@ f1.grid_propagate(False)
 f2.grid_propagate(False)
 f3.grid_propagate(False)
 
-addNoteButton= tk.Button(window, text ="add note", command = addNotePopup, height = buttonHeight, width = buttonWidth)
-addNoteButton.place(x=0,y=450)
+addNoteButton= tk.Button(f1, text ="add note", command = addNotePopup, height = 5, width = buttonWidth)
+addNoteButton.place(x=155,y=75)
 
 scrollbar = Scrollbar(f2, orient="vertical")
 scrollbar.pack(side="right", fill="y")
-notesOutput = tk.Listbox(f2, yscrollcommand=scrollbar.set,height=20, width=50, font=font)
-notesOutput.place(x=500, y=50)
+notesOutput = tk.Listbox(f2, yscrollcommand=scrollbar.set,height=10, width=25, font=font)
+notesOutput.place(x=35, y=20)
 scrollbar.config(command=notesOutput.yview)
 notesOutput.config(yscrollcommand=scrollbar.set)
 
 
 refreshButton= tk.Button(f2, text ="refresh", command = refresh , height = buttonHeight, width = buttonWidth)
-refreshButton.place(x=500,y=450)
+refreshButton.place(x=300,y=20)
 
 deleteButton= tk.Button(f2, text ="delete", command = delete , height = buttonHeight, width = buttonWidth)
-deleteButton.place(x=0,y=450)
+deleteButton.place(x=300,y=100)
 
-voiceOutput = tk.Listbox(f3, height=20, width=33, font=font)
-voiceOutput.place(x=500, y=50)
+voiceOutput = tk.Listbox(f3, height=10, width=25, font=font)
+voiceOutput.place(x=250, y=20)
 
-quitButton= tk.Button(window, text ="quit", command = quitFunction, height = buttonHeight, width = buttonWidth)
-quitButton.place(x=900,y=450)
+commandOutput = tk.Listbox(f3, height=10, width=25, font=font)
+commandOutput.place(x=35, y=20)
+
+quitButton= tk.Button(f1, text ="quit", command = quitFunction, height = 3, width = 7)
+quitButton.place(x=380,y=180)
+
   
 
 window.mainloop()
